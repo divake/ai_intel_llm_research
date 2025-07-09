@@ -1,0 +1,52 @@
+# Ollama models and binaries
+frameworks/ollama-ipex-llm-*/
+frameworks/ipex-llm/ollama-ipex-llm-*/
+*.tgz
+*.tar.gz
+*.so
+*.so.*
+ollama-bin
+ollama-lib
+
+# Cloned repositories
+frameworks/ipex-llm/ipex-llm/
+
+# Benchmark results (can be large)
+benchmarks/results/*.json
+
+# Logs
+*.log
+/tmp/
+
+# System files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Docker
+.docker/
+
+# Models directory (if models are stored here)
+models/**/*.bin
+models/**/*.gguf
+models/**/*.safetensors
