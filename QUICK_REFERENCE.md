@@ -56,7 +56,7 @@ cat ../results/benchmark_results_*.json | jq
 ```
 
 ### Web Access
-- **Web UI**: http://localhost:3000
+- **Web UI**: http://localhost:8080
 - **API**: http://localhost:11434
 
 ### API Examples

@@ -22,7 +22,7 @@ echo ""
 # Check Web UI
 echo "2. Web UI Status:"
 if docker ps | grep -q open-webui; then
-    echo "   ✅ Web UI is running at http://localhost:3000"
+    echo "   ✅ Web UI is running at http://localhost:8080"
 else
     echo "   ❌ Web UI is not running"
 fi

@@ -26,7 +26,7 @@ We created a complete AI research environment optimized for Intel hardware (Core
 ### Key Achievements
 1. ✅ Structured project layout for scalability
 2. ✅ Intel Arc GPU acceleration working (~51 tokens/s on TinyLlama)
-3. ✅ Web interface accessible at http://localhost:3000
+3. ✅ Web interface accessible at http://localhost:8080
 4. ✅ Automated launch/stop scripts
 5. ✅ Comprehensive benchmarking tools
 6. ✅ Hardware detection for CPU/GPU/NPU
@@ -121,7 +121,7 @@ docker start open-webui
 
 # First time setup
 docker run -d \
-  -p 3000:8080 \
+  --network="host" \
   --add-host=host.docker.internal:host-gateway \
   --name open-webui \
   --restart always \
@@ -496,7 +496,7 @@ docker restart open-webui
 
 # Recreate container
 docker rm open-webui
-docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway --name open-webui --restart always ghcr.io/open-webui/open-webui:main
+docker run -d --network="host" -e OLLAMA_BASE_URL=http://127.0.0.1:11434 --name open-webui --restart always ghcr.io/open-webui/open-webui:main
 ```
 
 #### 5. Out of Memory
@@ -689,7 +689,7 @@ cd ~/divek_nus/AI-Intel-Research && ./stop-ai-stack.sh
 - Ollama Binary: `~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu/`
 - Models Storage: `~/.ollama/models/`
 - Benchmark Results: `~/divek_nus/AI-Intel-Research/benchmarks/results/`
-- Web UI: http://localhost:3000
+- Web UI: http://localhost:8080
 - API: http://localhost:11434
 
 ### Performance Tips

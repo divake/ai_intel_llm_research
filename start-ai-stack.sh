@@ -4,7 +4,7 @@
 # Starts IPEX-LLM Ollama and Open WebUI
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OLLAMA_DIR="$SCRIPT_DIR/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu"
+OLLAMA_DIR="$SCRIPT_DIR/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu"
 OLLAMA_PID_FILE="/tmp/ollama-ipex-llm.pid"
 
 echo "================================================"
@@ -78,7 +78,7 @@ start_webui() {
     else
         # Create new container
         docker run -d \
-            -p 3000:8080 \
+            --network="host" \
             --add-host=host.docker.internal:host-gateway \
             --name open-webui \
             --restart always \
@@ -88,7 +88,7 @@ start_webui() {
     # Wait for WebUI to be ready
     echo -n "Waiting for WebUI to start..."
     for i in {1..30}; do
-        if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        if curl -s http://localhost:8080 > /dev/null 2>&1; then
             echo " Ready!"
             return 0
         fi
@@ -120,7 +120,7 @@ main() {
     echo "✅ AI Stack is running!"
     echo "================================================"
     echo "📌 Ollama API: http://localhost:11434"
-    echo "📌 Web UI: http://localhost:3000"
+    echo "📌 Web UI: http://localhost:8080"
     echo ""
     echo "Available models:"
     curl -s http://localhost:11434/api/tags | jq -r '.models[].name' 2>/dev/null || echo "Failed to list models"

@@ -28,7 +28,7 @@
    ```
 
 4. **Access Web UI**
-   - Open browser to http://localhost:3000
+   - Open browser to http://localhost:8080
 
 ## Environment Setup
 

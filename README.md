@@ -16,12 +16,12 @@ This project provides a comprehensive framework for running Large Language Model
 
 This will:
 - Start IPEX-LLM Ollama server with Intel GPU acceleration
-- Launch Open WebUI on http://localhost:3000
+- Launch Open WebUI on http://localhost:8080
 - Display available models
 
 ### 2. Access the Services
 
-- **Web UI**: http://localhost:3000 (ChatGPT-like interface)
+- **Web UI**: http://localhost:8080 (ChatGPT-like interface)
 - **API**: http://localhost:11434 (Ollama API)
 
 ### 3. Stop Services
