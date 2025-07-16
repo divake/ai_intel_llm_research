@@ -168,16 +168,41 @@ cd vlm_env_description
    - VLM describes each detected object
    - Depth information per object
 
+3. **🔬 Intel Workload Intelligence Monitor** (`intel_workload_monitor.py`)
+   - Real-time hardware monitoring (CPU/GPU/NPU/Memory/Temperature)
+   - VLM scene analysis with predictive offloading decisions
+   - Uncertainty quantification using conformal prediction
+   - Statistical guarantees for workload forecasting
+   - Research-grade demonstration of intelligent edge-to-cloud offloading
+
 #### Use Cases
 - **Accessibility**: Environment description for visually impaired
 - **Security**: Intelligent scene monitoring
 - **Research**: Computer vision experimentation
 - **Smart Home**: Context-aware automation
+- **Edge Computing Research**: Predictive workload management with uncertainty quantification
+- **Intel Hardware Optimization**: Intelligent CPU/GPU/NPU resource distribution
 
 #### Performance
 - **LLaVA:7b**: ~15-17 tokens/s on Intel Arc Graphics
 - **Analysis Time**: 2-3 seconds per description
 - **Camera**: 640x480 @ 30fps with depth
+
+## Research Contributions
+
+### Intel Workload Intelligence Monitor
+Advanced research system demonstrating:
+- **Predictive Edge Computing**: Forecasts resource overload 30 seconds in advance
+- **Uncertainty Quantification**: Uses conformal prediction with statistical guarantees
+- **Real-time Monitoring**: Live hardware utilization tracking (CPU/GPU/NPU)
+- **Intelligent Offloading**: Automated edge-to-cloud decision making
+- **Vision-Language Integration**: VLM workload stress testing with RealSense camera
+
+This system showcases cutting-edge techniques in:
+- Conformal prediction for time-series forecasting
+- Uncertainty-aware system design
+- Multi-modal hardware monitoring
+- Proactive resource management
 
 ## Future Enhancements
 
@@ -188,6 +213,8 @@ cd vlm_env_description
 - [ ] Integration with LangChain/LlamaIndex
 - [ ] Voice synthesis for VLM descriptions
 - [ ] Web interface for remote camera access
+- [ ] Federated learning for workload prediction
+- [ ] Multi-device coordination for load balancing
 
 ## System Requirements
 

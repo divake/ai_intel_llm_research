@@ -5,6 +5,10 @@ opencv-python>=4.8.0
 pyrealsense2>=2.55.1
 numpy>=1.24.3
 requests>=2.31.0
+psutil>=5.9.0
+
+# Machine Learning for predictive monitoring
+scikit-learn>=1.3.0
 
 # Optional for YOLO demo
 ultralytics>=8.0.0

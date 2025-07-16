@@ -1,51 +1,48 @@
-# Ollama models and binaries
-frameworks/ollama-ipex-llm-*/
-*.tgz
-*.tar.gz
-*.so
-*.so.*
-ollama-bin
-ollama-lib
+# Model files
+*.pt
+*.pth
+*.onnx
+*.pb
+*.h5
+*.tflite
+*.bin
+*.safetensors
 
-# Cloned repositories
-frameworks/ipex-llm/ipex-llm/
+# Large data files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.jpg
+*.png
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.raw
 
-# Benchmark results (can be large)
-benchmarks/results/*.json
-
-# Logs
-*.log
-/tmp/
-
-# System files
-.DS_Store
-*.swp
-*.swo
-*~
-
-# Python
+# Python cache
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
+*.class
 
-# IDE
-.vscode/
-.idea/
-*.iml
+# Log files
+*.log
+*.out
+*.err
 
 # Temporary files
 *.tmp
+*.temp
 *.bak
-*.cache
+*.backup
 
-# Docker
-.docker/
+# Hardware monitoring results
+hardware_monitoring_results.json
+benchmark_results_*.json
 
-# Models directory (if models are stored here)
-models/**/*.bin
-models/**/*.gguf
-models/**/*.safetensors
+# Snapshots
+*_snapshot_*.jpg
+*_descriptions_*.txt
+*_descriptions_*.json
