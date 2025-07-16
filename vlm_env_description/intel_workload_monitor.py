@@ -20,6 +20,9 @@ from collections import deque
 import pyrealsense2 as rs
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
+import select
+import fcntl
+import os
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -84,6 +87,9 @@ class HardwareMonitor:
         self.monitoring = False
         self.current_metrics = {}
         
+        # Cache for GPU data to avoid calling intel_gpu_top too frequently
+        self.gpu_data_cache = {'gpu_percent': 0, 'gpu_freq': 0, 'gpu_power': 0, 'timestamp': 0}
+        
     def get_cpu_usage(self):
         """Get CPU usage percentage"""
         return psutil.cpu_percent(interval=0.1)
@@ -92,22 +98,102 @@ class HardwareMonitor:
         """Get memory usage percentage"""
         return psutil.virtual_memory().percent
     
-    def get_gpu_usage(self):
-        """Get GPU usage (estimated from system load)"""
-        try:
-            # Try to get actual GPU usage
-            result = subprocess.run(['nvidia-smi', '--query-gpu=utilization.gpu', '--format=csv,noheader,nounits'], 
-                                  capture_output=True, text=True, timeout=2)
-            if result.returncode == 0:
-                return float(result.stdout.strip())
-        except:
-            pass
+    def _update_gpu_data(self):
+        """Update GPU data cache - call intel_gpu_top only once per second"""
+        current_time = time.time()
         
-        # Fallback: estimate from CPU usage and system load
-        cpu_usage = psutil.cpu_percent()
-        load_avg = psutil.getloadavg()[0] if hasattr(psutil, 'getloadavg') else 0
-        estimated_gpu = min(cpu_usage * 1.2 + load_avg * 10, 100)
-        return estimated_gpu
+        # Only update if cache is older than 1 second
+        if current_time - self.gpu_data_cache['timestamp'] < 1.0:
+            return
+        
+        try:
+            # Use Popen approach for better reliability
+            process = subprocess.Popen(['sudo', 'intel_gpu_top', '-s', '0.5', '-o', '-'],
+                                     stdout=subprocess.PIPE, 
+                                     stderr=subprocess.PIPE,
+                                     stdin=subprocess.DEVNULL,
+                                     text=True,
+                                     bufsize=1)
+            
+            # Make stdout non-blocking
+            fd = process.stdout.fileno()
+            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            
+            lines = []
+            start_time = time.time()
+            timeout = 3  # 3 second timeout
+            
+            while time.time() - start_time < timeout:
+                # Check if process is still running
+                if process.poll() is not None:
+                    break
+                    
+                # Check if data is available
+                ready, _, _ = select.select([process.stdout], [], [], 0.1)
+                
+                if ready:
+                    try:
+                        line = process.stdout.readline()
+                        if line:
+                            lines.append(line.strip())
+                            
+                            # Stop after getting enough data
+                            if len(lines) >= 3:
+                                break
+                                
+                    except IOError:
+                        pass
+                
+                time.sleep(0.1)
+            
+            # Terminate process
+            process.terminate()
+            process.wait()
+            
+            if len(lines) >= 3:
+                # Parse the latest data line
+                data_line = lines[-1]  # Last line has the latest data
+                parts = data_line.split()
+                
+                if len(parts) >= 19:
+                    # Extract all GPU data at once
+                    # Format: req act IRQ RC6 gpu pkg RCS(%) se wa BCS(%) se wa VCS(%) se wa VECS(%) se wa CCS(%) se wa
+                    freq_act = float(parts[1])  # Actual frequency
+                    gpu_power = float(parts[5])  # GPU power
+                    rcs_usage = float(parts[6])  # RCS % column
+                    bcs_usage = float(parts[9])  # BCS % column  
+                    vcs_usage = float(parts[12])  # VCS % column
+                    vecs_usage = float(parts[15])  # VECS % column
+                    ccs_usage = float(parts[18])  # CCS % column
+                    
+                    # Use the maximum usage across all engines
+                    gpu_usage = max(rcs_usage, bcs_usage, vcs_usage, vecs_usage, ccs_usage)
+                    
+                    # Update cache
+                    self.gpu_data_cache = {
+                        'gpu_percent': gpu_usage,
+                        'gpu_freq': freq_act,
+                        'gpu_power': gpu_power,
+                        'timestamp': current_time
+                    }
+                    
+                    # Debug output (remove in production)
+                    if gpu_usage > 0:
+                        print(f"GPU: {gpu_usage:.1f}% (RCS:{rcs_usage:.1f}% BCS:{bcs_usage:.1f}% VCS:{vcs_usage:.1f}% VECS:{vecs_usage:.1f}% CCS:{ccs_usage:.1f}%) | "
+                              f"Freq: {freq_act:.0f}MHz | Power: {gpu_power:.1f}W")
+                    return
+                    
+        except Exception as e:
+            print(f"ERROR: Cannot get real GPU data from intel_gpu_top: {e}")
+        
+        # If we get here, intel_gpu_top failed - keep old values but print error
+        print("ERROR: intel_gpu_top failed - using last known values for research accuracy")
+    
+    def get_gpu_usage(self):
+        """Get GPU usage from cache"""
+        self._update_gpu_data()
+        return self.gpu_data_cache['gpu_percent']
     
     def get_temperature(self):
         """Get system temperature"""
@@ -119,18 +205,33 @@ class HardwareMonitor:
         except:
             return 45.0
     
+    def get_gpu_power_and_freq(self):
+        """Get GPU power and frequency from cache"""
+        self._update_gpu_data()
+        return self.gpu_data_cache['gpu_freq'], self.gpu_data_cache['gpu_power']
+    
     def get_power_draw(self):
-        """Estimate power draw"""
+        """Get system power draw including GPU"""
         cpu_usage = psutil.cpu_percent()
-        return 15 + (cpu_usage / 100 * 30)  # Base + variable power
+        base_power = 15 + (cpu_usage / 100 * 30)  # Base + CPU power
+        
+        # Add GPU power if available
+        _, gpu_power = self.get_gpu_power_and_freq()
+        total_power = base_power + gpu_power
+        
+        return total_power
     
     def collect_metrics(self):
         """Collect all hardware metrics"""
+        gpu_freq, gpu_power = self.get_gpu_power_and_freq()
+        
         metrics = {
             'timestamp': datetime.now(),
             'cpu_percent': self.get_cpu_usage(),
             'memory_percent': self.get_memory_usage(),
             'gpu_percent': self.get_gpu_usage(),
+            'gpu_freq_mhz': gpu_freq,
+            'gpu_power_w': gpu_power,
             'temperature_c': self.get_temperature(),
             'power_draw_w': self.get_power_draw()
         }
@@ -335,8 +436,10 @@ Be concise but informative."""
         print("Controls:")
         print("SPACE - Analyze scene")
         print("C - Toggle continuous analysis")
+        print("R - Reset window size")
         print("Q - Quit")
         print("=" * 50)
+        print("Note: Window is resizable - drag corners to adjust size")
         
         # Start pipeline
         self.pipeline.start(self.config)
@@ -360,13 +463,13 @@ Be concise but informative."""
                 
                 color_image = np.asanyarray(color_frame.get_data())
                 
-                # Create display layout
-                display_height = 720
-                display_width = 1280
+                # Create display layout (make it larger and more readable)
+                display_height = 900
+                display_width = 1600
                 display = np.zeros((display_height, display_width, 3), dtype=np.uint8)
                 
                 # Resize camera feed
-                cam_height = 360
+                cam_height = 450
                 cam_width = 640
                 camera_resized = cv2.resize(color_image, (cam_width, cam_height))
                 
@@ -390,9 +493,8 @@ Be concise but informative."""
                             self.description_queue.put(color_image.copy())
                             last_analysis = current_time
                 
-                # Show display
+                # Show display (make window resizable)
                 cv2.namedWindow('Intel Workload Intelligence Monitor', cv2.WINDOW_NORMAL)
-                cv2.resizeWindow('Intel Workload Intelligence Monitor', display_width, display_height)
                 cv2.imshow('Intel Workload Intelligence Monitor', display)
                 
                 # Handle keys
@@ -406,6 +508,10 @@ Be concise but informative."""
                 elif key == ord('c'):
                     continuous_mode = not continuous_mode
                     print(f"Continuous mode: {'ON' if continuous_mode else 'OFF'}")
+                elif key == ord('r'):
+                    # Reset window size
+                    cv2.resizeWindow('Intel Workload Intelligence Monitor', display_width, display_height)
+                    print("Window size reset")
                 
         finally:
             self.hardware_monitor.monitoring = False
@@ -419,11 +525,11 @@ Be concise but informative."""
         
         metrics = self.hardware_monitor.current_metrics
         
-        # Panel dimensions
-        panel_x = 10
-        panel_y = 10
-        panel_width = 1260
-        panel_height = 180
+        # Panel dimensions (adjusted for larger window)
+        panel_x = 15
+        panel_y = 15
+        panel_width = 1570
+        panel_height = 200
         
         # Draw panel background
         cv2.rectangle(display, (panel_x, panel_y), 
@@ -435,36 +541,38 @@ Be concise but informative."""
         
         # Title
         cv2.putText(display, "HARDWARE MONITORING", 
-                   (panel_x + 10, panel_y + 25), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+                   (panel_x + 15, panel_y + 35), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
         
         # Metrics
-        y_offset = 55
+        y_offset = 75
         
         # CPU
         cpu_val = metrics['cpu_percent']
         self._draw_metric_bar(display, "CPU", cpu_val, "%", 
-                             panel_x + 20, panel_y + y_offset, 200, (0, 255, 0))
+                             panel_x + 30, panel_y + y_offset, 250, (0, 255, 0))
         
         # GPU
         gpu_val = metrics['gpu_percent']
-        self._draw_metric_bar(display, "GPU", gpu_val, "%", 
-                             panel_x + 250, panel_y + y_offset, 200, (0, 255, 255))
+        gpu_freq = metrics['gpu_freq_mhz']
+        gpu_label = f"GPU ({gpu_freq:.0f}MHz)"
+        self._draw_metric_bar(display, gpu_label, gpu_val, "%", 
+                             panel_x + 320, panel_y + y_offset, 250, (0, 255, 255))
         
         # Memory
         mem_val = metrics['memory_percent']
         self._draw_metric_bar(display, "MEM", mem_val, "%", 
-                             panel_x + 480, panel_y + y_offset, 200, (255, 0, 255))
+                             panel_x + 610, panel_y + y_offset, 250, (255, 0, 255))
         
         # Temperature
         temp_val = metrics['temperature_c']
         self._draw_metric_bar(display, "TEMP", temp_val, "°C", 
-                             panel_x + 710, panel_y + y_offset, 200, (0, 128, 255))
+                             panel_x + 900, panel_y + y_offset, 250, (0, 128, 255))
         
         # Power
         power_val = metrics['power_draw_w']
         self._draw_metric_bar(display, "PWR", power_val, "W", 
-                             panel_x + 940, panel_y + y_offset, 200, (255, 128, 0))
+                             panel_x + 1190, panel_y + y_offset, 250, (255, 128, 0))
         
         # Timestamp
         timestamp = metrics['timestamp'].strftime("%H:%M:%S")
@@ -479,7 +587,7 @@ Be concise but informative."""
         
         # Label
         cv2.putText(display, label, (x, y), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
         # Bar background
         cv2.rectangle(display, (x, y + 10), (x + width, y + 10 + bar_height), 
@@ -491,15 +599,15 @@ Be concise but informative."""
                      color, -1)
         
         # Value text
-        cv2.putText(display, f"{value:.1f}{unit}", (x, y + 50), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        cv2.putText(display, f"{value:.1f}{unit}", (x, y + 55), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     
     def _draw_vlm_panel(self, display):
         """Draw VLM description panel"""
-        panel_x = 650
-        panel_y = 360
-        panel_width = 620
-        panel_height = 350
+        panel_x = 670
+        panel_y = 450
+        panel_width = 900
+        panel_height = 430
         
         # Draw panel background
         cv2.rectangle(display, (panel_x, panel_y), 
@@ -544,10 +652,10 @@ Be concise but informative."""
     
     def _draw_offload_panel(self, display):
         """Draw offload decision panel"""
-        panel_x = 650
-        panel_y = 200
-        panel_width = 620
-        panel_height = 150
+        panel_x = 670
+        panel_y = 235
+        panel_width = 900
+        panel_height = 190
         
         # Draw panel background
         cv2.rectangle(display, (panel_x, panel_y), 
@@ -595,6 +703,64 @@ Be concise but informative."""
                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1)
 
 def main():
+    # Check if intel_gpu_top is available and working
+    print("Checking Intel GPU monitoring capability...")
+    try:
+        # Test the actual monitoring directly using Popen approach
+        print("Testing GPU data collection (this may take a few seconds)...")
+        
+        process = subprocess.Popen(['sudo', 'intel_gpu_top', '-s', '0.5', '-o', '-'],
+                                 stdout=subprocess.PIPE, 
+                                 stderr=subprocess.PIPE,
+                                 stdin=subprocess.DEVNULL,
+                                 text=True,
+                                 bufsize=1)
+        
+        # Make stdout non-blocking
+        fd = process.stdout.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        
+        lines = []
+        start_time = time.time()
+        timeout = 10
+        
+        while time.time() - start_time < timeout:
+            if process.poll() is not None:
+                break
+                
+            ready, _, _ = select.select([process.stdout], [], [], 0.1)
+            
+            if ready:
+                try:
+                    line = process.stdout.readline()
+                    if line:
+                        lines.append(line.strip())
+                        if len(lines) >= 3:
+                            break
+                except IOError:
+                    pass
+            
+            time.sleep(0.1)
+        
+        # Terminate process
+        process.terminate()
+        process.wait()
+        
+        if len(lines) >= 3:
+            print("✅ Intel GPU monitoring is working")
+        else:
+            print("❌ intel_gpu_top failed to collect data!")
+            print("GPU monitoring may not work properly.")
+            print("You can continue but GPU data will be inaccurate.")
+            response = input("Continue anyway? (y/n): ")
+            if response.lower() != 'y':
+                return
+    except Exception as e:
+        print(f"❌ Cannot access intel_gpu_top: {e}")
+        print("This is critical for research accuracy. Please fix before proceeding.")
+        return
+    
     # Check if Ollama is running
     try:
         response = requests.get("http://localhost:11434/api/tags")
