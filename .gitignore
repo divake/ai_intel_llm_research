@@ -23,7 +23,7 @@ frameworks/ollama-ipex-llm-*/
 *.jpg
 *.png
 *.jpeg
-*.gif
+# *.gif  # Commented out to allow demo GIFs
 *.bmp
 *.tiff
 *.webp
