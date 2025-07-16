@@ -55,19 +55,23 @@ class ConformalPredictor:
         if not self.fitted:
             return None, None, None
         
-        X_scaled = self.scaler.transform(X)
-        prediction = self.model.predict(X_scaled)[0]
-        
-        # Conformal prediction interval
-        if len(self.residuals) > 0:
-            quantile = np.quantile(self.residuals, 1 - self.alpha)
-            lower_bound = prediction - quantile
-            upper_bound = prediction + quantile
-        else:
-            lower_bound = prediction - 10
-            upper_bound = prediction + 10
-        
-        return prediction, lower_bound, upper_bound
+        try:
+            X_scaled = self.scaler.transform(X)
+            prediction = self.model.predict(X_scaled)[0]
+            
+            # Conformal prediction interval
+            if len(self.residuals) > 0:
+                quantile = np.quantile(self.residuals, 1 - self.alpha)
+                lower_bound = prediction - quantile
+                upper_bound = prediction + quantile
+            else:
+                lower_bound = prediction - 10
+                upper_bound = prediction + 10
+            
+            return prediction, lower_bound, upper_bound
+        except Exception as e:
+            print(f"Prediction error: {e}")
+            return None, None, None
 
 class HardwareMonitor:
     """Real-time hardware monitoring with predictive capabilities"""
@@ -88,7 +92,11 @@ class HardwareMonitor:
         self.current_metrics = {}
         
         # Cache for GPU data to avoid calling intel_gpu_top too frequently
-        self.gpu_data_cache = {'gpu_percent': 0, 'gpu_freq': 0, 'gpu_power': 0, 'timestamp': 0}
+        self.gpu_data_cache = {
+            'gpu_percent': 0, 'gpu_freq': 0, 'gpu_power': 0, 
+            'gpu_compute': 0, 'gpu_render': 0, 'gpu_blitter': 0,
+            'timestamp': 0
+        }
         
     def get_cpu_usage(self):
         """Get CPU usage percentage"""
@@ -175,6 +183,9 @@ class HardwareMonitor:
                         'gpu_percent': gpu_usage,
                         'gpu_freq': freq_act,
                         'gpu_power': gpu_power,
+                        'gpu_compute': ccs_usage,  # Compute engine for AI/ML
+                        'gpu_render': rcs_usage,   # Render engine for graphics
+                        'gpu_blitter': bcs_usage,  # Blitter engine for data movement
                         'timestamp': current_time
                     }
                     
@@ -194,6 +205,21 @@ class HardwareMonitor:
         """Get GPU usage from cache"""
         self._update_gpu_data()
         return self.gpu_data_cache['gpu_percent']
+    
+    def get_gpu_compute_usage(self):
+        """Get GPU compute engine (CCS) usage - for AI/ML workloads"""
+        self._update_gpu_data()
+        return self.gpu_data_cache['gpu_compute']
+    
+    def get_gpu_render_usage(self):
+        """Get GPU render engine (RCS) usage - for graphics workloads"""
+        self._update_gpu_data()
+        return self.gpu_data_cache['gpu_render']
+    
+    def get_gpu_blitter_usage(self):
+        """Get GPU blitter engine (BCS) usage - for data movement"""
+        self._update_gpu_data()
+        return self.gpu_data_cache['gpu_blitter']
     
     def get_temperature(self):
         """Get system temperature"""
@@ -230,6 +256,9 @@ class HardwareMonitor:
             'cpu_percent': self.get_cpu_usage(),
             'memory_percent': self.get_memory_usage(),
             'gpu_percent': self.get_gpu_usage(),
+            'gpu_compute_percent': self.get_gpu_compute_usage(),
+            'gpu_render_percent': self.get_gpu_render_usage(),
+            'gpu_blitter_percent': self.get_gpu_blitter_usage(),
             'gpu_freq_mhz': gpu_freq,
             'gpu_power_w': gpu_power,
             'temperature_c': self.get_temperature(),
@@ -290,6 +319,14 @@ class HardwareMonitor:
         gpu_pred, gpu_lower, gpu_upper = self.gpu_predictor.predict_with_uncertainty(X_pred)
         memory_pred, memory_lower, memory_upper = self.memory_predictor.predict_with_uncertainty(X_pred)
         
+        # Handle None predictions gracefully
+        if cpu_pred is None:
+            cpu_pred, cpu_lower, cpu_upper = 0, 0, 0
+        if gpu_pred is None:
+            gpu_pred, gpu_lower, gpu_upper = 0, 0, 0
+        if memory_pred is None:
+            memory_pred, memory_lower, memory_upper = 0, 0, 0
+        
         return {
             'cpu': {'prediction': cpu_pred, 'lower': cpu_lower, 'upper': cpu_upper},
             'gpu': {'prediction': gpu_pred, 'lower': gpu_lower, 'upper': gpu_upper},
@@ -325,13 +362,16 @@ class HardwareMonitor:
         # Prediction factor
         prediction_factor = 1.0
         if predictions:
-            predicted_max = max(
-                predictions['cpu']['upper'] if predictions['cpu']['upper'] else 0,
-                predictions['gpu']['upper'] if predictions['gpu']['upper'] else 0,
-                predictions['memory']['upper'] if predictions['memory']['upper'] else 0
-            )
-            if predicted_max > 80:
-                prediction_factor = 1.2
+            try:
+                predicted_max = max(
+                    predictions['cpu']['upper'] if predictions['cpu']['upper'] else 0,
+                    predictions['gpu']['upper'] if predictions['gpu']['upper'] else 0,
+                    predictions['memory']['upper'] if predictions['memory']['upper'] else 0
+                )
+                if predicted_max > 80:
+                    prediction_factor = 1.2
+            except (KeyError, TypeError):
+                prediction_factor = 1.0  # Default if prediction fails
         
         total_load_score = adjusted_load * prediction_factor
         
@@ -552,27 +592,32 @@ Be concise but informative."""
         self._draw_metric_bar(display, "CPU", cpu_val, "%", 
                              panel_x + 30, panel_y + y_offset, 250, (0, 255, 0))
         
-        # GPU
+        # GPU Total
         gpu_val = metrics['gpu_percent']
         gpu_freq = metrics['gpu_freq_mhz']
         gpu_label = f"GPU ({gpu_freq:.0f}MHz)"
         self._draw_metric_bar(display, gpu_label, gpu_val, "%", 
-                             panel_x + 320, panel_y + y_offset, 250, (0, 255, 255))
+                             panel_x + 320, panel_y + y_offset, 200, (0, 255, 255))
+        
+        # GPU Compute (CCS) - for AI/ML workloads
+        gpu_compute_val = metrics['gpu_compute_percent']
+        self._draw_metric_bar(display, "AI/ML", gpu_compute_val, "%", 
+                             panel_x + 540, panel_y + y_offset, 200, (255, 165, 0))
         
         # Memory
         mem_val = metrics['memory_percent']
         self._draw_metric_bar(display, "MEM", mem_val, "%", 
-                             panel_x + 610, panel_y + y_offset, 250, (255, 0, 255))
+                             panel_x + 760, panel_y + y_offset, 200, (255, 0, 255))
         
         # Temperature
         temp_val = metrics['temperature_c']
         self._draw_metric_bar(display, "TEMP", temp_val, "°C", 
-                             panel_x + 900, panel_y + y_offset, 250, (0, 128, 255))
+                             panel_x + 980, panel_y + y_offset, 200, (0, 128, 255))
         
         # Power
         power_val = metrics['power_draw_w']
         self._draw_metric_bar(display, "PWR", power_val, "W", 
-                             panel_x + 1190, panel_y + y_offset, 250, (255, 128, 0))
+                             panel_x + 1200, panel_y + y_offset, 200, (255, 128, 0))
         
         # Timestamp
         timestamp = metrics['timestamp'].strftime("%H:%M:%S")
@@ -696,11 +741,16 @@ Be concise but informative."""
         # Predictions
         predictions = self.hardware_monitor.predict_workload()
         if predictions:
-            pred_text = f"Predicted CPU: {predictions['cpu']['prediction']:.1f}% "
-            pred_text += f"({predictions['cpu']['lower']:.1f}-{predictions['cpu']['upper']:.1f}%)"
-            cv2.putText(display, pred_text, 
-                       (panel_x + 10, panel_y + 120), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1)
+            try:
+                pred_text = f"Predicted CPU: {predictions['cpu']['prediction']:.1f}% "
+                pred_text += f"({predictions['cpu']['lower']:.1f}-{predictions['cpu']['upper']:.1f}%)"
+                cv2.putText(display, pred_text, 
+                           (panel_x + 10, panel_y + 120), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1)
+            except (KeyError, TypeError):
+                cv2.putText(display, "Building prediction models...", 
+                           (panel_x + 10, panel_y + 120), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, (150, 150, 150), 1)
 
 def main():
     # Check if intel_gpu_top is available and working
