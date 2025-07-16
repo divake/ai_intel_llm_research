@@ -55,7 +55,7 @@ cd ~/divek_nus/AI-Intel-Research
 
 ### Quick Test
 ```bash
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 echo "Hello, how are you?" | ./ollama run tinyllama
 ```
 
@@ -66,12 +66,11 @@ echo "Hello, how are you?" | ./ollama run tinyllama
 ```
 /home/nus-ai/divek_nus/AI-Intel-Research/
 ├── frameworks/
-│   └── ipex-llm/
-│       ├── ollama-ipex-llm-2.3.0b20250429-ubuntu/  # Main Ollama binary
-│       │   ├── ollama                               # Executable
-│       │   ├── start-ollama.sh                      # Original start script
-│       │   └── lib*.so                              # Intel libraries
-│       └── ipex-llm/                                # Cloned repository
+│   ├── ollama-ipex-llm-2.3.0b20250429-ubuntu/      # Main Ollama binary
+│   │   ├── ollama                                   # Executable
+│   │   ├── start-ollama.sh                          # Original start script
+│   │   └── lib*.so                                  # Intel libraries
+│   └── ipex-llm/                                    # Cloned repository
 ├── models/
 │   ├── llm/
 │   │   ├── text/      # Text-only models
@@ -101,7 +100,7 @@ echo "Hello, how are you?" | ./ollama run tinyllama
 
 #### Start Ollama Server Only
 ```bash
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 
 # With GPU acceleration
 export OLLAMA_NUM_GPU=999
@@ -141,7 +140,7 @@ docker stop open-webui
 
 #### List Available Models
 ```bash
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 ./ollama list
 ```
 
@@ -247,7 +246,7 @@ Visit: https://ollama.com/library
 
 3. **Download Model**
 ```bash
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 ./ollama pull <model-name>:<tag>
 ```
 
@@ -448,7 +447,7 @@ pkill -f ollama
 tail -f /tmp/ollama-ipex-llm.log
 
 # Try manual start with verbose
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 ./ollama serve --verbose
 ```
 
@@ -627,7 +626,7 @@ print(result)
 ```bash
 # Add to ~/.bashrc
 ollama_query() {
-    echo "$1" | ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu/ollama run ${2:-tinyllama}
+    echo "$1" | ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu/ollama run ${2:-tinyllama}
 }
 
 # Usage
@@ -668,7 +667,7 @@ chmod +x monitor_ollama.sh
 cd ~/divek_nus/AI-Intel-Research && ./start-ai-stack.sh
 
 # Quick chat
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 ./ollama run tinyllama
 
 # Download new model
@@ -686,7 +685,7 @@ cd ~/divek_nus/AI-Intel-Research && ./stop-ai-stack.sh
 ```
 
 ### Key Locations
-- Ollama Binary: `~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu/`
+- Ollama Binary: `~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu/`
 - Models Storage: `~/.ollama/models/`
 - Benchmark Results: `~/divek_nus/AI-Intel-Research/benchmarks/results/`
 - Web UI: http://localhost:8080

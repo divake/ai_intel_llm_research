@@ -18,7 +18,7 @@ cd ~/divek_nus/AI-Intel-Research
 ### Model Operations
 ```bash
 # Navigate to Ollama directory
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 
 # List models
 ./ollama list
@@ -80,7 +80,7 @@ curl http://localhost:11434
 ### If Ollama won't start
 ```bash
 pkill -f ollama
-cd ~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu
+cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
 ./ollama serve
 ```
 
@@ -125,7 +125,7 @@ export OLLAMA_KEEP_ALIVE=30m
 
 ## 📍 Key Paths
 - **Project Root**: `~/divek_nus/AI-Intel-Research/`
-- **Ollama Binary**: `~/divek_nus/AI-Intel-Research/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu/`
+- **Ollama Binary**: `~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu/`
 - **Models**: `~/.ollama/models/`
 - **Results**: `~/divek_nus/AI-Intel-Research/benchmarks/results/`
 

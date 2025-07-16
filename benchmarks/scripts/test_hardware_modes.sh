@@ -5,7 +5,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESULTS_DIR="$SCRIPT_DIR/../results"
-OLLAMA_DIR="$SCRIPT_DIR/../../frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu"
+OLLAMA_DIR="$SCRIPT_DIR/../../frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu"
 
 echo "================================================"
 echo "Intel Hardware Acceleration Test Suite"

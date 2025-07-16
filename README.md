@@ -77,7 +77,7 @@ This will test performance on:
 
 ### Download Models
 ```bash
-cd frameworks/ipex-llm/ollama-ipex-llm-*/
+cd frameworks/ollama-ipex-llm-*/
 ./ollama pull <model-name>
 ```
 

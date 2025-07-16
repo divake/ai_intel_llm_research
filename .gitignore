@@ -1,6 +1,5 @@
 # Ollama models and binaries
 frameworks/ollama-ipex-llm-*/
-frameworks/ipex-llm/ollama-ipex-llm-*/
 *.tgz
 *.tar.gz
 *.so

@@ -3,7 +3,7 @@
 # Model addition helper script
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OLLAMA_DIR="$SCRIPT_DIR/frameworks/ipex-llm/ollama-ipex-llm-2.3.0b20250429-ubuntu"
+OLLAMA_DIR="$SCRIPT_DIR/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu"
 
 echo "================================================"
 echo "AI Intel Research - Model Manager"
