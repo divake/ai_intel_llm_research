@@ -41,6 +41,10 @@ AI-Intel-Research/
 ├── benchmarks/        # Performance testing
 │   ├── scripts/       # Benchmark scripts
 │   └── results/       # Test results
+├── vlm_env_description/ # VLM + RealSense camera demos
+│   ├── realsense_vlm_demo.py      # Direct VLM scene analysis
+│   ├── realsense_yolo_vlm_demo.py # YOLO + VLM pipeline
+│   └── run_demo.sh               # Easy launcher
 └── configs/           # Configuration files
 ```
 
@@ -87,6 +91,12 @@ cd frameworks/ollama-ipex-llm-*/
 - **Vision**: `llava:7b` (7B params + vision)
 - **Code**: `deepseek-coder:1.3b` (1.3B params)
 
+### Vision Models for Camera Integration
+- **LLaVA:7b**: Best for scene description (~15-17 tokens/s)
+- **BakLLaVA:7b**: Alternative vision model
+- **Qwen-VL**: Good for detailed object analysis
+- **CogVLM**: Advanced vision-language understanding
+
 ## Environment Variables
 
 ### GPU Optimization
@@ -130,6 +140,45 @@ docker logs open-webui
 - Check GPU utilization with `sudo intel_gpu_top`
 - Monitor system resources with `htop`
 
+## VLM + RealSense Camera Integration
+
+### Real-time Environment Description
+This project includes advanced demos that combine Vision Language Models with Intel RealSense D455 camera for real-time scene understanding.
+
+#### Features
+- **Real-time Scene Analysis**: Live camera feed processed by VLMs
+- **Depth Integration**: Uses RealSense D455 depth information
+- **Object Detection**: YOLO + VLM pipeline for detailed object descriptions
+- **Intel GPU Acceleration**: Optimized for Intel Arc Graphics
+
+#### Quick Start
+```bash
+cd vlm_env_description
+./run_demo.sh
+```
+
+#### Available Demos
+1. **Direct VLM Analysis** (`realsense_vlm_demo.py`)
+   - Press SPACE to analyze current view
+   - Press 'C' for continuous mode
+   - Comprehensive scene descriptions
+
+2. **YOLO + VLM Pipeline** (`realsense_yolo_vlm_demo.py`)
+   - Object detection with YOLO
+   - VLM describes each detected object
+   - Depth information per object
+
+#### Use Cases
+- **Accessibility**: Environment description for visually impaired
+- **Security**: Intelligent scene monitoring
+- **Research**: Computer vision experimentation
+- **Smart Home**: Context-aware automation
+
+#### Performance
+- **LLaVA:7b**: ~15-17 tokens/s on Intel Arc Graphics
+- **Analysis Time**: 2-3 seconds per description
+- **Camera**: 640x480 @ 30fps with depth
+
 ## Future Enhancements
 
 - [ ] Direct NPU inference support
@@ -137,6 +186,8 @@ docker logs open-webui
 - [ ] Distributed inference
 - [ ] Fine-tuning capabilities
 - [ ] Integration with LangChain/LlamaIndex
+- [ ] Voice synthesis for VLM descriptions
+- [ ] Web interface for remote camera access
 
 ## System Requirements
 

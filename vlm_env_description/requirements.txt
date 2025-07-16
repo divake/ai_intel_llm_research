@@ -1,0 +1,20 @@
+# VLM Environment Description Requirements
+
+# Core dependencies
+opencv-python>=4.8.0
+pyrealsense2>=2.55.1
+numpy>=1.24.3
+requests>=2.31.0
+
+# Optional for YOLO demo
+ultralytics>=8.0.0
+
+# System libraries (install via apt)
+# sudo apt install intel-opencl-icd intel-level-zero-gpu level-zero
+
+# RealSense SDK (if not already installed)
+# Follow Intel RealSense installation guide
+
+# Ollama server with vision models
+# ./ollama pull llava:7b
+# ./ollama pull bakllava:7b
