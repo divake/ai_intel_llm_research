@@ -21,7 +21,7 @@ frameworks/ollama-ipex-llm-*/
 *.mov
 *.mkv
 *.jpg
-*.png
+# *.png  # Commented out to allow documentation images
 *.jpeg
 # *.gif  # Commented out to allow demo GIFs
 *.bmp
