@@ -611,7 +611,7 @@ Be concise but informative."""
         
         # Temperature
         temp_val = metrics['temperature_c']
-        self._draw_metric_bar(display, "TEMP", temp_val, "°C", 
+        self._draw_metric_bar(display, "TEMP", temp_val, "C", 
                              panel_x + 980, panel_y + y_offset, 200, (0, 128, 255))
         
         # Power
@@ -628,7 +628,7 @@ Be concise but informative."""
     def _draw_metric_bar(self, display, label, value, unit, x, y, width, color):
         """Draw a metric bar"""
         bar_height = 20
-        max_val = 100 if unit in ["%"] else (100 if unit == "°C" else 50)
+        max_val = 100 if unit in ["%"] else (100 if unit == "C" else 50)
         
         # Label
         cv2.putText(display, label, (x, y), 
