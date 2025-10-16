@@ -1,4 +1,10 @@
-# AI Intel Research - Quick Reference Card
+# Quick Reference - Ollama AI Stack
+
+**Last Updated: October 15, 2025**
+
+⚠️ **IMPORTANT**: Now using standard Ollama (v0.12.5) due to October 2025 system updates. The old IPEX-LLM setup is no longer compatible. Everything still works perfectly!
+
+---
 
 ## 🚀 Essential Commands
 
@@ -6,53 +12,39 @@
 ```bash
 # Start everything
 cd ~/divek_nus/AI-Intel-Research
-./start-ai-stack.sh
+./start-ollama-working.sh
 
-# Stop everything  
-./stop-ai-stack.sh
+# Stop everything
+./stop-ollama-working.sh
 
 # Check status
-./check_status.sh
+curl http://localhost:11434/api/tags
 ```
 
 ### Model Operations
 ```bash
-# Navigate to Ollama directory
-cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
-
 # List models
-./ollama list
+ollama list
 
 # Download models
-./ollama pull tinyllama              # 1.1B - Fastest
-./ollama pull phi3:mini               # 3.8B - Balanced
-./ollama pull llama3.2:3b             # 3B - Good quality
-./ollama pull mistral:7b              # 7B - Better quality
-./ollama pull llava:7b                # 7B - Vision capable
-./ollama pull deepseek-coder:1.3b     # 1.3B - For coding
+ollama pull tinyllama              # 1.1B - Fastest
+ollama pull phi3:mini              # 3.8B - Balanced
+ollama pull llama3.2:3b            # 3B - Good quality
+ollama pull mistral:7b             # 7B - Better quality
+ollama pull llava:7b               # 7B - Vision capable
+ollama pull deepseek-coder:1.3b    # 1.3B - For coding
 
 # Chat with model
-./ollama run tinyllama
+ollama run tinyllama
 
 # One-shot query
-echo "Your question here" | ./ollama run tinyllama
+echo "Your question here" | ollama run tinyllama
 
 # Delete model
-./ollama rm model-name
-```
+ollama rm model-name
 
-### Benchmarking
-```bash
-# Run benchmark
-cd ~/divek_nus/AI-Intel-Research/benchmarks/scripts
-python3 benchmark_llm.py --models tinyllama:latest
-
-# Test hardware modes
-./test_hardware_modes.sh
-
-# View results
-ls -la ../results/
-cat ../results/benchmark_results_*.json | jq
+# Model info
+ollama show model-name
 ```
 
 ### Web Access
@@ -75,66 +67,166 @@ curl http://localhost:11434/api/tags | jq
 curl http://localhost:11434
 ```
 
+---
+
 ## 🔧 Troubleshooting
 
 ### If Ollama won't start
 ```bash
+# Kill all Ollama processes
 pkill -f ollama
-cd ~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu
-./ollama serve
+sleep 2
+
+# Restart
+cd ~/divek_nus/AI-Intel-Research
+./start-ollama-working.sh
 ```
 
-### If GPU not working
+### Port already in use
 ```bash
-# Check GPU
-clinfo -l
-ls -la /dev/dri/
+# Kill processes on port 11434
+sudo lsof -ti:11434 | xargs sudo kill -9
+sleep 2
 
-# Force GPU mode
-export OLLAMA_NUM_GPU=999
-export ONEAPI_DEVICE_SELECTOR=level_zero:0
+# Restart
+./start-ollama-working.sh
 ```
 
-### Monitor performance
+### Web UI not accessible
 ```bash
-# GPU usage
-sudo intel_gpu_top
+# Check Docker status
+docker ps -a | grep open-webui
 
+# Restart container
+docker restart open-webui
+
+# View logs
+docker logs open-webui
+```
+
+### Model not responding
+```bash
+# Check API
+curl http://localhost:11434/api/tags
+
+# Test simple query
+curl -s http://localhost:11434/api/generate -d '{
+  "model": "tinyllama",
+  "prompt": "Hi",
+  "stream": false
+}'
+```
+
+### Monitor system resources
+```bash
 # System resources
 htop
 
-# Ollama logs
-tail -f /tmp/ollama-ipex-llm.log
+# Memory usage
+free -h
+
+# Disk space
+df -h
 ```
+
+---
 
 ## 🎯 Performance Settings
 
 ```bash
-# Maximum GPU usage (default)
-export OLLAMA_NUM_GPU=999
-
-# CPU only
-export OLLAMA_NUM_GPU=0
+# Keep model loaded longer
+export OLLAMA_KEEP_ALIVE=30m
 
 # Increase context length
 export OLLAMA_NUM_CTX=4096
-
-# Keep model loaded longer
-export OLLAMA_KEEP_ALIVE=30m
 ```
+
+---
 
 ## 📍 Key Paths
 - **Project Root**: `~/divek_nus/AI-Intel-Research/`
-- **Ollama Binary**: `~/divek_nus/AI-Intel-Research/frameworks/ollama-ipex-llm-2.3.0b20250429-ubuntu/`
-- **Models**: `~/.ollama/models/`
-- **Results**: `~/divek_nus/AI-Intel-Research/benchmarks/results/`
-
-## 💡 Tips
-1. Start with smaller models for testing
-2. Always check GPU is being used with `sudo intel_gpu_top`
-3. TinyLlama is fastest, Mistral 7B is highest quality
-4. Use Web UI for easier interaction
-5. Run benchmarks to compare models
+- **Ollama Binary**: `/usr/local/bin/ollama`
+- **Models Storage**: `~/.ollama/models/`
+- **Startup Script**: `~/divek_nus/AI-Intel-Research/start-ollama-working.sh`
+- **Stop Script**: `~/divek_nus/AI-Intel-Research/stop-ollama-working.sh`
 
 ---
+
+## 📦 Available Models
+
+Your 6 ready-to-use models:
+1. **tinyllama:latest** (637 MB) - Fastest
+2. **deepseek-coder:1.3b** (776 MB) - Code generation
+3. **llama3.2:3b** (2.0 GB) - Balanced performance
+4. **phi3:mini** (2.2 GB) - Smart reasoning
+5. **mistral:7b** (4.1 GB) - Advanced capabilities
+6. **llava:7b** (4.7 GB) - Vision + text
+
+---
+
+## 💬 Common Commands
+
+```bash
+# Start services
+cd ~/divek_nus/AI-Intel-Research && ./start-ollama-working.sh
+
+# Quick chat
+ollama run tinyllama
+
+# Download new model
+ollama pull llama3.2:3b
+
+# List models
+ollama list
+
+# Check status
+curl http://localhost:11434/api/tags
+
+# Stop services
+cd ~/divek_nus/AI-Intel-Research && ./stop-ollama-working.sh
+```
+
+---
+
+## 💡 Tips
+1. Start with smaller models (tinyllama) for testing
+2. TinyLlama is fastest, Mistral 7B is highest quality
+3. Use Web UI at http://localhost:8080 for easier interaction
+4. Models are shared - accessible from both CLI and Web UI
+5. All models run on CPU (stable and reliable)
+
+---
+
+## 📅 What Changed (October 2025)
+
+**Before**: IPEX-LLM with GPU acceleration (84 tokens/sec on TinyLlama)
+**Now**: Standard Ollama with CPU (stable and compatible)
+
+**Reason**: System updated to kernel 6.14.0-29 and glibc 2.39, old IPEX-LLM binary (April 2025) became incompatible with new libraries.
+
+**Result**:
+- ✅ All 6 models working
+- ✅ Text generation functional
+- ✅ Web UI accessible
+- ✅ API responding
+- ⚠️ CPU-only (no GPU acceleration)
+
+**Future**: Build IPEX-LLM from source or wait for new release to restore GPU acceleration.
+
+---
+
+## 📚 Full Documentation
+
+For detailed instructions, see:
+- **QUICK_START.md** - Simple daily usage guide
+- **MEMORY_GUIDE.md** - Complete command reference
+
+---
+
+**Status**: ✅ Fully Working
+**Version**: Standard Ollama v0.12.5
+**Last Tested**: October 15, 2025
+
+---
+
 Keep this handy! 🎉
